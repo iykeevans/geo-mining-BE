@@ -17,6 +17,7 @@ const pool = new Pool({
 const app = express();
 
 app.use(cors());
+app.use(express.json());
 
 app.get("/", (req, res) => {
   res.json({
@@ -26,8 +27,25 @@ app.get("/", (req, res) => {
 });
 
 app.get("/sample-data", async (req, res) => {
-  const { rows: data } = await pool.query(`SELECT * FROM "sample-data-v1"`);
-  res.json({ status: 200, message: "Successfully fetched sample data", data });
+  try {
+    let query;
+
+    if (Object.keys(req.query).length) {
+      const { labelSection } = req.query;
+      query = `SELECT * FROM "sample-data-v1" WHERE thin_section_label LIKE '%${labelSection}';`;
+    } else {
+      query = `SELECT * FROM "sample-data-v1"`;
+    }
+
+    const { rows: data } = await pool.query(query);
+    res.json({
+      status: 200,
+      message: "Successfully fetched sample data",
+      data,
+    });
+  } catch (err) {
+    console.log(err.message);
+  }
 });
 
 app.listen(PORT, () => {
